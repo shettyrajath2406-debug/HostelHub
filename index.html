@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HostelHub – Login / Register</title>
+  <style>
+    body{font-family:Arial, sans-serif; background:#f4f6f8; display:flex; align-items:center; justify-content:center; min-height:100vh; margin:0}
+    .card{width:360px;background:#fff;padding:22px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.08)}
+    h2{text-align:center;margin:0 0 14px}
+    .field{width:100%;margin:8px 0}
+    input[type="text"],input[type="email"],input[type="password"]{width:100%;padding:10px;border-radius:6px;border:1px solid #d9dce0;font-size:14px;box-sizing:border-box}
+    button{width:100%;padding:10px;border-radius:6px;border:none;background:#2563eb;color:#fff;font-size:15px;cursor:pointer}
+    button[disabled]{opacity:.6;cursor:not-allowed}
+    .switch{margin-top:12px;text-align:center;color:#2563eb;cursor:pointer;text-decoration:underline}
+    .msg{height:20px;text-align:center;margin-top:8px;font-size:14px}
+    .msg.error{color:#d9534f}
+    .msg.success{color:#16a34a}
+    .small{font-size:12px;color:#666;text-align:center;margin-top:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="title">Login</h2>
+
+    <div id="form">
+      <input class="field" type="text" id="username" placeholder="Email" autocomplete="username" />
+      <input class="field" type="password" id="password" placeholder="Password" autocomplete="current-password" />
+      <button id="submitBtn">Login</button>
+
+      <p class="switch" id="toggle">Don't have an account? Register</p>
+      <p class="msg" id="message"></p>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // === ADMIN CONFIG ===
+  const ADMIN_EMAIL = "shettyrajath2406@gmail.com";
+  const ADMIN_PASSWORD = "admin123"; // Change this to your desired admin password
+
+  // === ELEMENTS ===
+  const title = document.getElementById("title");
+  const toggle = document.getElementById("toggle");
+  const submitBtn = document.getElementById("submitBtn");
+  const messageEl = document.getElementById("message");
+  const usernameEl = document.getElementById("username");
+  const passwordEl = document.getElementById("password");
+
+  // state
+  let isLogin = true;
+
+  // Helper: get users from localStorage
+  function getUsers() {
+    return JSON.parse(localStorage.getItem("hostelhub_users") || "[]");
+  }
+  function saveUsers(users) {
+    localStorage.setItem("hostelhub_users", JSON.stringify(users));
+  }
+
+  function showMessage(text, type = "") {
+    messageEl.textContent = text || "";
+    messageEl.className = type ? `msg ${type}` : "msg";
+  }
+
+  function clearInputs() {
+    usernameEl.value = "";
+    passwordEl.value = "";
+  }
+
+  // Toggle login/register UI
+  toggle.addEventListener("click", () => {
+    isLogin = !isLogin;
+    title.textContent = isLogin ? "Login" : "Student Register";
+    submitBtn.textContent = isLogin ? "Login" : "Register";
+    toggle.textContent = isLogin ? "Don't have an account? Register" : "Already have an account? Login";
+    showMessage("");
+    clearInputs();
+  });
+
+  // Submit handler
+  submitBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const email = usernameEl.value.trim().toLowerCase();
+    const password = passwordEl.value.trim();
+
+    showMessage("");
+    if (!email || !password) {
+      showMessage("Please enter both email and password.", "error");
+      return;
+    }
+
+    if (isLogin) {
+      // === LOGIN ===
+      
+      // Check if admin
+      if (email === ADMIN_EMAIL) {
+        if (password === ADMIN_PASSWORD) {
+          sessionStorage.setItem("hostelhub_admin", "true");
+          showMessage("Admin login successful! Redirecting...", "success");
+          setTimeout(() => {
+            window.location.href = "admin-dashboard.html";
+          }, 700);
+        } else {
+          showMessage("Invalid admin password.", "error");
+        }
+        return;
+      }
+
+      // Check student users
+      const users = getUsers();
+      const user = users.find(u => u.email === email);
+      
+      if (!user) {
+        showMessage("User not found. Please register.", "error");
+        return;
+      }
+      if (user.password !== password) {
+        showMessage("Invalid password.", "error");
+        return;
+      }
+
+      // Student login success
+      sessionStorage.setItem("hostelhub_user", JSON.stringify({ username: user.email }));
+      showMessage("Login successful! Redirecting...", "success");
+      setTimeout(() => {
+        window.location.href = "student-dashboard.html";
+      }, 700);
+
+    } else {
+      // === REGISTER ===
+      
+      // Block admin email from registering
+      if (email === ADMIN_EMAIL) {
+        showMessage("This email is reserved for admin.", "error");
+        return;
+      }
+
+      const users = getUsers();
+      
+      // Check if already registered
+      if (users.find(u => u.email === email)) {
+        showMessage("Email already registered. Please login.", "error");
+        return;
+      }
+
+      // Register new student
+      users.push({ email, password, role: "student" });
+      saveUsers(users);
+
+      showMessage("Registered successfully! Please login.", "success");
+      // Switch to login
+      isLogin = true;
+      title.textContent = "Login";
+      submitBtn.textContent = "Login";
+      toggle.textContent = "Don't have an account? Register";
+      clearInputs();
+    }
+  });
+
+  // Press Enter to submit
+  [usernameEl, passwordEl].forEach(el => {
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") submitBtn.click();
+    });
+  });
+
+})();
+</script>
+</body>
+</html>

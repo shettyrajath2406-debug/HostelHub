@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HostelHub Student Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 700px;
+      margin: auto;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin: 0;
+    }
+    button {
+      background-color: #dc3545;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #c82333;
+    }
+    form {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 30px;
+      box-shadow: 0 0 5px #ccc;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input[type="text"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button.submit-btn {
+      margin-top: 10px;
+      background-color: #007bff;
+      width: 100%;
+    }
+    button.submit-btn:hover {
+      background-color: #0056b3;
+    }
+    .complaints-list {
+      background: white;
+      padding: 15px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px #ccc;
+    }
+    .complaint-item {
+      border-bottom: 1px solid #ddd;
+      padding: 10px 0;
+    }
+    .complaint-item:last-child {
+      border-bottom: none;
+    }
+    .status {
+      font-weight: bold;
+    }
+    .status.open {
+      color: orange;
+    }
+    .status.in-progress {
+      color: blue;
+    }
+    .status.resolved {
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Welcome, <span id="username"></span></h2>
+    <button id="logout-btn">Logout</button>
+  </header>
+
+  <section>
+    <h3>Raise a New Complaint</h3>
+    <form id="complaint-form">
+      <label for="title">Title</label>
+      <input type="text" id="title" required />
+      <label for="description">Description</label>
+      <textarea id="description" rows="3" required></textarea>
+      <button type="submit" class="submit-btn">Submit Complaint</button>
+    </form>
+  </section>
+
+  <section>
+    <h3>Your Complaint History</h3>
+    <div class="complaints-list" id="complaints-list">
+      <!-- Complaints will be listed here -->
+    </div>
+  </section>
+
+  <script>
+    const usernameSpan = document.getElementById("username");
+    const logoutBtn = document.getElementById("logout-btn");
+    const complaintForm = document.getElementById("complaint-form");
+    const complaintsList = document.getElementById("complaints-list");
+
+    // Check user login status
+    const user = JSON.parse(sessionStorage.getItem("hostelhub_user"));
+    if (!user) {
+      window.location.href = "index.html";
+    }
+    usernameSpan.textContent = user.username;
+
+    logoutBtn.addEventListener("click", () => {
+      sessionStorage.removeItem("hostelhub_user");
+      window.location.href = "index.html";
+    });
+
+    // Load complaints for this user from localStorage
+    function getComplaints() {
+      return JSON.parse(localStorage.getItem("hostelhub_complaints") || "[]");
+    }
+    function saveComplaints(complaints) {
+      localStorage.setItem("hostelhub_complaints", JSON.stringify(complaints));
+    }
+
+    function renderComplaints() {
+      let complaints = getComplaints();
+      // Show only complaints of logged-in user
+      complaints = complaints.filter(c => c.username === user.username);
+      if (complaints.length === 0) {
+        complaintsList.innerHTML = "<p>No complaints raised yet.</p>";
+        return;
+      }
+      complaintsList.innerHTML = "";
+      complaints.forEach(complaint => {
+        const div = document.createElement("div");
+        div.classList.add("complaint-item");
+        let statusClass = "open";
+        if (complaint.status === "In Progress") statusClass = "in-progress";
+        else if (complaint.status === "Resolved") statusClass = "resolved";
+
+        div.innerHTML = `
+          <div><strong>Title:</strong> ${complaint.title}</div>
+          <div><strong>Description:</strong> ${complaint.description}</div>
+          <div><strong>Status:</strong> <span class="status ${statusClass}">${complaint.status}</span></div>
+        `;
+        complaintsList.appendChild(div);
+      });
+    }
+
+    // Handle complaint form submission
+    complaintForm.addEventListener("submit", event => {
+      event.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("description").value.trim();
+      if (!title || !description) return alert("Please fill out all fields.");
+
+      let complaints = getComplaints();
+      complaints.push({
+        id: Date.now(),
+        username: user.username,
+        title,
+        description,
+        status: "Open"
+      });
+      saveComplaints(complaints);
+      complaintForm.reset();
+      renderComplaints();
+      alert("Complaint submitted successfully.");
+    });
+
+    renderComplaints();
+  </script>
+</body>
+</html>

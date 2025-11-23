@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HostelHub Admin Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin: 0;
+    }
+    button {
+      background-color: #dc3545;
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #c82333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 5px #ccc;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    select {
+      padding: 5px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Admin Dashboard</h2>
+    <button id="logout-btn">Logout</button>
+  </header>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Student</th>
+        <th>Title</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Update Status</th>
+      </tr>
+    </thead>
+    <tbody id="complaints-table-body">
+      <!-- Complaints will be populated here -->
+    </tbody>
+  </table>
+
+  <script>
+    const logoutBtn = document.getElementById("logout-btn");
+
+    // Simple admin session simulation with sessionStorage (for demo)
+    if (!sessionStorage.getItem("hostelhub_admin")) {
+      // Login simulation
+      const pwd = prompt("Enter admin password (default: admin123)");
+      if (pwd !== "admin123") {
+        alert("Wrong password. Access denied.");
+        window.location.href = "index.html";
+      } else {
+        sessionStorage.setItem("hostelhub_admin", "true");
+      }
+    }
+
+    logoutBtn.addEventListener("click", () => {
+      sessionStorage.removeItem("hostelhub_admin");
+      window.location.href = "index.html";
+    });
+
+    function getComplaints() {
+      return JSON.parse(localStorage.getItem("hostelhub_complaints") || "[]");
+    }
+    function saveComplaints(complaints) {
+      localStorage.setItem("hostelhub_complaints", JSON.stringify(complaints));
+    }
+
+    function renderComplaintsTable() {
+      const tbody = document.getElementById("complaints-table-body");
+      const complaints = getComplaints();
+      if (complaints.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No complaints reported yet.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = "";
+      complaints.forEach((c, index) => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${c.username}</td>
+            <td>${c.title}</td>
+            <td>${c.description}</td>
+            <td>${c.status}</td>
+            <td>
+              <select data-index="${index}">
+                <option value="Open" ${c.status === "Open" ? "selected" : ""}>Open</option>
+                <option value="In Progress" ${c.status === "In Progress" ? "selected" : ""}>In Progress</option>
+                <option value="Resolved" ${c.status === "Resolved" ? "selected" : ""}>Resolved</option>
+              </select>
+            </td>
+          </tr>
+        `;
+      });
+
+      // Add event listeners on selects to update status
+      document.querySelectorAll("select").forEach(select => {
+        select.addEventListener("change", e => {
+          const idx = e.target.getAttribute("data-index");
+          const newStatus = e.target.value;
+          let complaints = getComplaints();
+          complaints[idx].status = newStatus;
+          saveComplaints(complaints);
+          renderComplaintsTable();
+        });
+      });
+    }
+
+    renderComplaintsTable();
+  </script>
+</body>
+</html>
